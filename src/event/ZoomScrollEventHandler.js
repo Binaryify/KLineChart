@@ -58,6 +58,9 @@ export default class ZoomScrollEventHandler extends EventHandler {
   }
 
   mouseWheelEvent (event) {
+    event.preventDefault(event)
+    this._chartData.startScroll()
+    this._chartData.scroll(-event.deltaX)
     if (!this._checkEventPointX(event.localX)) {
       return
     }
@@ -80,8 +83,10 @@ export default class ZoomScrollEventHandler extends EventHandler {
     }
 
     if (deltaY !== 0) {
-      const scale = Math.sign(deltaY) * Math.min(1, Math.abs(deltaY))
+      const scale = Math.sign(deltaY) * Math.min(1, Math.abs(deltaY)) * 5
       this._chartData.zoom(scale, { x: event.localX, y: event.localY })
+      // const scale = Math.sign(deltaY) * Math.min(1, Math.abs(deltaY))
+      // this._chartData.zoom(scale, { x: event.localX, y: event.localY })
     }
   }
 

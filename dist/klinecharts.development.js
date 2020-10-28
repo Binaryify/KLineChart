@@ -7,7 +7,7 @@
 (function (global, factory) {
 typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
 typeof define === 'function' && define.amd ? define(['exports'], factory) :
-(global = global || self, factory(global.klinecharts = {}));
+(global = typeof globalThis !== 'undefined' ? globalThis : global || self, factory(global.klinecharts = {}));
 }(this, (function (exports) { 'use strict';
 
 function _typeof(obj) {
@@ -160,7 +160,7 @@ function _possibleConstructorReturn(self, call) {
 function _createSuper(Derived) {
   var hasNativeReflectConstruct = _isNativeReflectConstruct();
 
-  return function () {
+  return function _createSuperInternal() {
     var Super = _getPrototypeOf(Derived),
         result;
 
@@ -223,9 +223,12 @@ function _arrayLikeToArray(arr, len) {
   return arr2;
 }
 
-function _createForOfIteratorHelper(o) {
+function _createForOfIteratorHelper(o, allowArrayLike) {
+  var it;
+
   if (typeof Symbol === "undefined" || o[Symbol.iterator] == null) {
-    if (Array.isArray(o) || (o = _unsupportedIterableToArray(o))) {
+    if (Array.isArray(o) || (it = _unsupportedIterableToArray(o)) || allowArrayLike && o && typeof o.length === "number") {
+      if (it) o = it;
       var i = 0;
 
       var F = function () {};
@@ -251,8 +254,7 @@ function _createForOfIteratorHelper(o) {
     throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.");
   }
 
-  var it,
-      normalCompletion = true,
+  var normalCompletion = true,
       didErr = false,
       err;
   return {
@@ -6899,15 +6901,23 @@ var CandleStickFloatLayerView = /*#__PURE__*/function (_TechnicalIndicatorFl) {
       }
 
       var rectWidth = rectBorderSize * 2 + maxLabelWidth + rectPaddingLeft + rectPaddingRight;
-      var centerX = this._width / 2;
       var rectX;
 
-      if (x < centerX) {
-        rectX = this._width - rectRight - rectWidth;
-      } else {
-        rectX = rectLeft;
+      if (!window.rectKlineChartAlert) {
+        window.rectKlineChartAlert = rectLeft;
       }
 
+      if (x < rectWidth) {
+        rectX = this._width - rectRight - rectWidth;
+        window.rectKlineChartAlert = rectX;
+      }
+
+      if (x > this._width - rectRight - rectWidth) {
+        rectX = rectLeft;
+        window.rectKlineChartAlert = rectX;
+      }
+
+      rectX = window.rectKlineChartAlert;
       var rectY = rect.top;
       var radius = rect.borderRadius;
       this._ctx.lineWidth = rectBorderSize;
@@ -10184,6 +10194,12 @@ var ZoomScrollEventHandler = /*#__PURE__*/function (_EventHandler) {
   }, {
     key: "mouseWheelEvent",
     value: function mouseWheelEvent(event) {
+      event.preventDefault(event);
+
+      this._chartData.startScroll();
+
+      this._chartData.scroll(-event.deltaX);
+
       if (!this._checkEventPointX(event.localX)) {
         return;
       }
@@ -10209,12 +10225,14 @@ var ZoomScrollEventHandler = /*#__PURE__*/function (_EventHandler) {
       }
 
       if (deltaY !== 0) {
-        var scale = Math.sign(deltaY) * Math.min(1, Math.abs(deltaY));
+        var scale = Math.sign(deltaY) * Math.min(1, Math.abs(deltaY)) * 5;
 
         this._chartData.zoom(scale, {
           x: event.localX,
           y: event.localY
-        });
+        }); // const scale = Math.sign(deltaY) * Math.min(1, Math.abs(deltaY))
+        // this._chartData.zoom(scale, { x: event.localX, y: event.localY })
+
       }
     }
   }, {
